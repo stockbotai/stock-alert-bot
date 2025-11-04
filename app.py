@@ -67,7 +67,8 @@ def index():
 
 import os
 
-if name == "main":
+if __name__ == "__main__":
+
     # Flask app run karega Render ke port par
     import os
     port = int(os.environ.get("PORT", 10000))
