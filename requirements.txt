@@ -1,6 +1,6 @@
 flask
+apscheduler
 yfinance
 pandas
 scikit-learn
 numpy
-apscheduler
