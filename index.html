@@ -1,49 +1,95 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>💹 AI Stock Alert Bot</title>
+<meta charset="utf-8" />
+<title>AI Stock Alert Bot</title>
 <style>
-  body { font-family: Arial; background: #0d1117; color: #fff; text-align: center; }
-  h1 { color: #00ffcc; }
-  table { margin: 20px auto; border-collapse: collapse; width: 85%; }
-  th, td { padding: 10px; border: 1px solid #333; }
-  tr.up { background-color: rgba(0,255,0,0.1); }
-  tr.down { background-color: rgba(255,0,0,0.1); }
+  body { font-family: Arial, sans-serif; background:#0d1117; color:#fff; margin:20px; text-align:center;}
+  h1 { color:#00ffcc; }
+  .container { max-width:1000px; margin:0 auto; text-align:left; }
+  table { width:100%; border-collapse:collapse; margin-bottom:20px; }
+  th, td { padding:8px 10px; border-bottom:1px solid #222; }
+  th { text-align:left; background:#0f1720; color:#9ad; }
+  tr.up { background: rgba(0,255,0,0.05); }
+  tr.down { background: rgba(255,0,0,0.05); }
+  .btn { display:inline-block; padding:10px 14px; background:#0ea5a3; color:#042; border-radius:6px; text-decoration:none; margin-right:8px;}
+  .alert { padding:6px 10px; display:inline-block; border-radius:6px; margin-right:8px; background:#222; color:#fff; }
+  .small { font-size:12px; color:#bbb; }
 </style>
 </head>
 <body>
-<h1>🤖 AI Powered Live Stock Bot</h1>
-<table id="stockTable">
-  <thead><tr><th>Symbol</th><th>Change (%)</th><th>Volume</th><th>AI Prediction</th></tr></thead>
-  <tbody></tbody>
-</table>
+  <div class="container">
+    <h1>🤖 AI Stock Alert Bot</h1>
+    <p class="small">Auto-scan every 5 minutes. Manual scan: click button. Alerts stored in SQLite.</p>
+
+    <div style="margin-bottom:12px;">
+      <a class="btn" href="#" id="manualScan">🔁 Manual Scan</a>
+      <a class="btn" href="#" id="refresh">🔄 Refresh</a>
+      <span class="alert">Auto-scan interval: 5 min</span>
+    </div>
+
+    <h2>Live Stocks (snapshot)</h2>
+    <table id="stocksTable">
+      <thead><tr><th>Symbol</th><th>Change (%)</th><th>Price</th><th>Volume</th><th>AI Prediction</th></tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <h2>Saved Alerts (history)</h2>
+    <table id="alertsTable">
+      <thead><tr><th>Time (UTC)</th><th>Symbol</th><th>Price</th><th>Change%</th><th>AI</th><th>Type</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
 <script>
-async function fetchStocks() {
-  const res = await fetch('/api/stocks');
-  const data = await res.json();
-  const tbody = document.querySelector('#stockTable tbody');
-  tbody.innerHTML = '';
-  data.forEach(stock => {
-    const row = document.createElement('tr');
-    row.className = stock.change >= 0 ? 'up' : 'down';
-    row.innerHTML = `
-      <td>${stock.symbol}</td>
-      <td>${stock.change}</td>
-      <td>${stock.volume.toLocaleString()}</td>
-      <td>${stock.ai_prediction}</td>`;
-    tbody.appendChild(row);
-
-    if (stock.change <= -1.5) {
-      new Notification(`⚠️ ${stock.symbol} Falling`, { body: `Change: ${stock.change}%` });
-    }
-  });
+async function fetchStocks(){
+  try{
+    const res = await fetch('/api/stocks');
+    const data = await res.json();
+    const tbody = document.querySelector('#stocksTable tbody');
+    tbody.innerHTML = '';
+    data.forEach(s=>{
+      const tr = document.createElement('tr');
+      tr.className = s.change_pct >= 0 ? 'up' : 'down';
+      tr.innerHTML = `<td>${s.symbol}</td><td>${s.change_pct}</td><td>${s.price.toFixed(2)}</td><td>${(s.volume||0).toLocaleString()}</td><td>${s.ai_prediction||''}</td>`;
+      tbody.appendChild(tr);
+    });
+  }catch(e){
+    console.error(e);
+  }
 }
 
-if (Notification.permission !== "granted") Notification.requestPermission();
-setInterval(fetchStocks, 300000);
-fetchStocks();
+async function fetchAlerts(){
+  try{
+    const res = await fetch('/api/alerts?limit=200');
+    const data = await res.json();
+    const tbody = document.querySelector('#alertsTable tbody');
+    tbody.innerHTML = '';
+    data.forEach(a=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${a.created_at}</td><td>${a.symbol}</td><td>${(a.price||0).toFixed(2)}</td><td>${a.change_pct}</td><td>${a.ai_prediction}</td><td>${a.alert_type}</td>`;
+      tbody.appendChild(tr);
+    });
+  }catch(e){
+    console.error(e);
+  }
+}
+
+document.getElementById('manualScan').addEventListener('click', async (e)=>{
+  e.preventDefault();
+  document.getElementById('manualScan').innerText = 'Started...';
+  await fetch('/trigger-scan', {method:'POST'}).catch(()=>{});
+  setTimeout(()=>{ document.getElementById('manualScan').innerText = '🔁 Manual Scan'; refreshAll(); }, 2000);
+});
+
+document.getElementById('refresh').addEventListener('click', (e)=>{ e.preventDefault(); refreshAll(); });
+
+function refreshAll(){ fetchStocks(); fetchAlerts(); }
+
+refreshAll();
+setInterval(fetchStocks, 300000); // 5 min
+setInterval(fetchAlerts, 300000);
 </script>
 </body>
 </html>
