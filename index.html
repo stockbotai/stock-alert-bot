@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>💹 AI Stock Alert Bot</title>
+<style>
+  body { font-family: Arial; background: #0d1117; color: #fff; text-align: center; }
+  h1 { color: #00ffcc; }
+  table { margin: 20px auto; border-collapse: collapse; width: 85%; }
+  th, td { padding: 10px; border: 1px solid #333; }
+  tr.up { background-color: rgba(0,255,0,0.1); }
+  tr.down { background-color: rgba(255,0,0,0.1); }
+</style>
+</head>
+<body>
+<h1>🤖 AI Powered Live Stock Bot</h1>
+<table id="stockTable">
+  <thead><tr><th>Symbol</th><th>Change (%)</th><th>Volume</th><th>AI Prediction</th></tr></thead>
+  <tbody></tbody>
+</table>
+
+<script>
+async function fetchStocks() {
+  const res = await fetch('/api/stocks');
+  const data = await res.json();
+  const tbody = document.querySelector('#stockTable tbody');
+  tbody.innerHTML = '';
+  data.forEach(stock => {
+    const row = document.createElement('tr');
+    row.className = stock.change >= 0 ? 'up' : 'down';
+    row.innerHTML = `
+      <td>${stock.symbol}</td>
+      <td>${stock.change}</td>
+      <td>${stock.volume.toLocaleString()}</td>
+      <td>${stock.ai_prediction}</td>`;
+    tbody.appendChild(row);
+
+    if (stock.change <= -1.5) {
+      new Notification(`⚠️ ${stock.symbol} Falling`, { body: `Change: ${stock.change}%` });
+    }
+  });
+}
+
+if (Notification.permission !== "granted") Notification.requestPermission();
+setInterval(fetchStocks, 300000);
+fetchStocks();
+</script>
+</body>
+</html>
