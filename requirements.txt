@@ -3,3 +3,4 @@ yfinance
 pandas
 scikit-learn
 numpy
+apscheduler
