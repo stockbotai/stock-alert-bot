@@ -1,1 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Genie — Live Stock Dashboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+    body {
+      margin: 0;
+      background: #0e1117;
+      color: #e6e6e6;
+    }
+    header {
+      background: #1c1f26;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.8rem;
+      color: #00e676;
+      letter-spacing: 1px;
+      border-bottom: 2px solid #00e676;
+    }
+    main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 20px;
+    }
+    .card {
+      background: #161a22;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    h2 {
+      margin-top: 0;
+      text-align: center;
+      border-bottom: 2px solid #00e676;
+      padding-bottom: 10px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    li {
+      padding: 10px 15px;
+      margin: 8px 0;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s;
+    }
+    .bullish li {
+      background: #042b13;
+      border: 1px solid #00e676;
+    }
+    .bearish li {
+      background: #2b0404;
+      border: 1px solid #ff5252;
+    }
+    li span {
+      font-weight: 500;
+    }
+    .price {
+      font-weight: 700;
+    }
+    .bullish .price {
+      color: #00e676;
+    }
+    .bearish .price {
+      color: #ff5252;
+    }
+    footer {
+      text-align: center;
+      padding: 15px;
+      background: #1c1f26;
+      color: #aaa;
+      border-top: 1px solid #333;
+    }
+    @media (max-width: 800px) {
+      main { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>🚀 Genie — Live NSE Stocks</header>
 
+  <main>
+    <div class="card bullish">
+      <h2>Top Bullish Stocks 🟢</h2>
+      <ul id="bullishList">
+        <li>Loading...</li>
+      </ul>
+    </div>
+    <div class="card bearish">
+      <h2>Top Bearish Stocks 🔴</h2>
+      <ul id="bearishList">
+        <li>Loading...</li>
+      </ul>
+    </div>
+  </main>
+
+  <footer>Auto-updates every 1 minute ⏱ | Powered by Genie</footer>
+
+  <script>
+    async function loadData() {
+      try {
+        const [bullishRes, bearishRes] = await Promise.all([
+          fetch("/api/bullish"),
+          fetch("/api/bearish")
+        ]);
+        const bullish = await bullishRes.json();
+        const bearish = await bearishRes.json();
+
+        const bullList = document.getElementById("bullishList");
+        const bearList = document.getElementById("bearishList");
+        bullList.innerHTML = "";
+        bearList.innerHTML = "";
+
+        bullish.forEach(stock => {
+          const li = document.createElement("li");
+          li.innerHTML = `<span>${stock.name}</span><span class="price">${stock.price}</span>`;
+          bullList.appendChild(li);
+        });
+
+        bearish.forEach(stock => {
+          const li = document.createElement("li");
+          li.innerHTML = `<span>${stock.name}</span><span class="price">${stock.price}</span>`;
+          bearList.appendChild(li);
+        });
+
+      } catch (e) {
+        console.error("Error fetching data:", e);
+      }
+    }
+
+    // Initial load
+    loadData();
+    // Auto refresh every 1 minute
+    setInterval(loadData, 60000);
+  </script>
+</body>
+</html>
