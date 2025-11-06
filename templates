@@ -1,43 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Stock Screener | EWO Live</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <meta http-equiv="refresh" content="60">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Stock Genie - Live Bullish & Bearish Stocks</title>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      background: linear-gradient(90deg, #6366f1, #3b82f6);
+      width: 100%;
+      padding: 20px;
+      text-align: center;
+      color: white;
+      font-size: 1.5rem;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .container {
+      display: flex;
+      justify-content: space-around;
+      width: 90%;
+      margin-top: 40px;
+      flex-wrap: wrap;
+    }
+
+    .card {
+      background: #1e293b;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+      padding: 20px;
+      width: 40%;
+      min-width: 300px;
+      margin-bottom: 30px;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    li {
+      background: rgba(255,255,255,0.05);
+      padding: 10px;
+      margin: 6px 0;
+      border-radius: 8px;
+      font-size: 1.1rem;
+    }
+
+    .bullish {
+      color: #22c55e;
+    }
+
+    .bearish {
+      color: #ef4444;
+    }
+
+    footer {
+      margin-top: 40px;
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+  </style>
 </head>
-<body class="bg-[#0f172a] text-gray-100 font-sans">
-  <div class="text-center py-6">
-    <h1 class="text-3xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
-      🔥 Bullish–Bearish Screener
-    </h1>
-    <p class="text-sm text-gray-400 mt-1">Updated: {{ data['last_update'] }}</p>
-  </div>
+<body>
+  <header>📈 AI Stock Genie — Intraday Sector Analysis</header>
 
-  <div class="grid grid-cols-2 gap-6 px-8">
-    <!-- Bullish -->
-    <div>
-      <h2 class="text-2xl text-green-400 font-semibold mb-3">Bullish Stocks</h2>
-      {% for s in data['bullish'] %}
-        <div class="bg-green-900/20 border border-green-600 rounded-xl p-4 mb-2 shadow-md">
-          <p class="text-lg font-bold">{{ s.symbol }}</p>
-          <p class="text-sm text-gray-300">Sector: {{ s.sector }}</p>
-          <p class="text-sm">EWO(1D): {{ s.ewo_1d }} | EWO(5m): {{ s.ewo_5m }}</p>
-        </div>
-      {% endfor %}
+  <div class="container">
+    <div class="card">
+      <h2 class="bullish">Top Bullish Stocks 🚀</h2>
+      <ul id="bullish-list">
+        <li>Loading...</li>
+      </ul>
     </div>
 
-    <!-- Bearish -->
-    <div>
-      <h2 class="text-2xl text-red-400 font-semibold mb-3">Bearish Stocks</h2>
-      {% for s in data['bearish'] %}
-        <div class="bg-red-900/20 border border-red-600 rounded-xl p-4 mb-2 shadow-md">
-          <p class="text-lg font-bold">{{ s.symbol }}</p>
-          <p class="text-sm text-gray-300">Sector: {{ s.sector }}</p>
-          <p class="text-sm">EWO(1D): {{ s.ewo_1d }} | EWO(5m): {{ s.ewo_5m }}</p>
-        </div>
-      {% endfor %}
+    <div class="card">
+      <h2 class="bearish">Top Bearish Stocks 📉</h2>
+      <ul id="bearish-list">
+        <li>Loading...</li>
+      </ul>
     </div>
   </div>
+
+  <footer>Auto-updated every 1 minute • Powered by AI Genie ⚡</footer>
+
+  <script>
+    async function fetchData() {
+      try {
+        const res = await fetch('/api');
+        const data = await res.json();
+
+        const bullishList = document.getElementById("bullish-list");
+        const bearishList = document.getElementById("bearish-list");
+
+        bullishList.innerHTML = "";
+        bearishList.innerHTML = "";
+
+        data.bullish.forEach(stock => {
+          const li = document.createElement("li");
+          li.textContent = stock;
+          bullishList.appendChild(li);
+        });
+
+        data.bearish.forEach(stock => {
+          const li = document.createElement("li");
+          li.textContent = stock;
+          bearishList.appendChild(li);
+        });
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    }
+
+    // Auto refresh every 1 min
+    fetchData();
+    setInterval(fetchData, 60000);
+  </script>
 </body>
 </html>
