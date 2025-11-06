@@ -2,4 +2,3 @@ flask
 yfinance
 pandas
 apscheduler
-nse
