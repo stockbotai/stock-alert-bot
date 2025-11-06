@@ -2,118 +2,83 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <title>📊 Stock Genie v2</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stock Genie — Live Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: "Poppins", sans-serif;
-      background: linear-gradient(135deg, #0f172a, #1e293b);
-      color: #e5e7eb;
-      margin: 0;
-      padding: 20px;
+      background-color: #0a0f1a;
+      color: white;
+      font-family: 'Segoe UI', sans-serif;
       text-align: center;
+      padding: 20px;
     }
-    h1 {
-      color: #00eaff;
-      margin-bottom: 8px;
-    }
-    .container {
+    h1 { color: cyan; }
+    .btn-container {
+      margin: 20px auto;
       display: flex;
       justify-content: center;
-      flex-wrap: wrap;
       gap: 30px;
-      margin-top: 20px;
     }
-    .card {
-      width: 340px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-      padding: 20px;
-      backdrop-filter: blur(8px);
+    .btn {
+      padding: 15px 30px;
+      border-radius: 10px;
+      background: #121a2a;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      transition: 0.3s;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
     }
-    h2 { margin: 0 0 10px 0; }
-    .bullish h2 { color: #22c55e; }
-    .bearish h2 { color: #ef4444; }
-    ul { list-style: none; padding: 0; margin: 0; }
-    li {
-      display: flex;
-      justify-content: space-between;
-      padding: 5px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-    canvas { width: 95%; margin-top: 30px; }
+    .bullish { color: #00ff66; }
+    .bearish { color: #ff4444; }
+    canvas { margin-top: 40px; max-width: 90%; }
   </style>
 </head>
 <body>
-  <h1>📊 Stock Genie — Bullish & Bearish Dashboard</h1>
-  <p><small>Live data | Refreshes every 60s</small></p>
+  <h1>📈 Stock Genie v2 — Bullish & Bearish Dashboard</h1>
+  <p>Live data | Updates every 30s</p>
 
-  <div class="container">
-    <div class="card bullish">
-      <h2>Top Bullish 📈</h2>
-      <ul id="bullishList"></ul>
-    </div>
-    <div class="card bearish">
-      <h2>Top Bearish 📉</h2>
-      <ul id="bearishList"></ul>
-    </div>
+  <div class="btn-container">
+    <div class="btn bullish" id="bullish">Top Bullish</div>
+    <div class="btn bearish" id="bearish">Top Bearish</div>
   </div>
 
-  <canvas id="trendChart"></canvas>
+  <canvas id="marketChart"></canvas>
 
   <script>
-    async function loadData() {
-      const bullish = await fetch("/api/bullish").then(r => r.json());
-      const bearish = await fetch("/api/bearish").then(r => r.json());
+    const ctx = document.getElementById('marketChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: "Avg Market % Change",
+          borderColor: 'cyan',
+          backgroundColor: 'rgba(0,255,255,0.2)',
+          data: []
+        }]
+      },
+      options: {
+        scales: { y: { beginAtZero: false } },
+        plugins: { legend: { labels: { color: "white" } } }
+      }
+    });
 
-      document.getElementById("bullishList").innerHTML =
-        bullish.map(s => `<li><b>${s.name}</b> <span style="color:#22c55e">${s.change}</span></li>`).join('');
+    async function fetchData() {
+      const res = await fetch('/api/market-data');
+      const data = await res.json();
 
-      document.getElementById("bearishList").innerHTML =
-        bearish.map(s => `<li><b>${s.name}</b> <span style="color:#ef4444">${s.change}</span></li>`).join('');
-
-      // load chart from stored history
-      const history = await fetch("/api/history").then(r => r.json());
-      const timestamps = history.map(x => x.timestamp);
-      const avgChange = history.map(x => {
-        const avg = x.data.reduce((a, b) => a + b.pChange, 0) / x.data.length;
-        return avg.toFixed(2);
-      });
-
-      renderChart(timestamps, avgChange);
+      document.getElementById("bullish").textContent = `Top Bullish: ${data.latest.bullish}`;
+      document.getElementById("bearish").textContent = `Top Bearish: ${data.latest.bearish}`;
+      
+      chart.data.labels = data.history.map(d => d.time);
+      chart.data.datasets[0].data = data.history.map(d => d.avg_change);
+      chart.update();
     }
 
-    function renderChart(labels, data) {
-      const ctx = document.getElementById("trendChart").getContext("2d");
-      if (window.myChart) window.myChart.destroy();
-      window.myChart = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels,
-          datasets: [{
-            label: "Avg Market % Change (5min updates)",
-            data,
-            borderColor: "#00eaff",
-            backgroundColor: "rgba(0,234,255,0.3)",
-            fill: true,
-            tension: 0.4
-          }]
-        },
-        options: {
-          plugins: { legend: { labels: { color: "#e5e7eb" } } },
-          scales: {
-            x: { ticks: { color: "#9ca3af" } },
-            y: { ticks: { color: "#9ca3af" } }
-          }
-        }
-      });
-    }
-
-    loadData();
-    setInterval(loadData, 60000);
+    fetchData();
+    setInterval(fetchData, 30000); // every 30 sec
   </script>
 </body>
 </html>
