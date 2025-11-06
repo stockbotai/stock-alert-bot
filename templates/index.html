@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Genie — Bullish & Bearish Stocks</title>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 40px;
+    }
+    h1 {
+      color: #00eaff;
+      margin-bottom: 10px;
+    }
+    .container {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+    .card {
+      width: 320px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+      padding: 20px;
+      backdrop-filter: blur(8px);
+    }
+    .bullish h2 { color: #22c55e; }
+    .bearish h2 { color: #ef4444; }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li {
+      margin: 10px 0;
+      font-size: 1rem;
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 5px;
+    }
+    small { opacity: 0.7; }
+  </style>
+</head>
+<body>
+  <h1>📊 Stock Genie — Live Bullish & Bearish Stocks</h1>
+  <p><small>Auto-refreshes every 60 seconds</small></p>
+
+  <div class="container">
+    <div class="card bullish">
+      <h2>Top Bullish 📈</h2>
+      <ul id="bullishList"></ul>
+    </div>
+    <div class="card bearish">
+      <h2>Top Bearish 📉</h2>
+      <ul id="bearishList"></ul>
+    </div>
+  </div>
+
+  <script>
+    async function loadData() {
+      const bullish = await fetch("/api/bullish").then(res => res.json());
+      const bearish = await fetch("/api/bearish").then(res => res.json());
+
+      const bullishList = document.getElementById("bullishList");
+      const bearishList = document.getElementById("bearishList");
+
+      bullishList.innerHTML = bullish.map(s => `<li><b>${s.name}</b> <span style="color:#22c55e">${s.change}</span></li>`).join('');
+      bearishList.innerHTML = bearish.map(s => `<li><b>${s.name}</b> <span style="color:#ef4444">${s.change}</span></li>`).join('');
+    }
+
+    loadData();
+    setInterval(loadData, 60000);
+  </script>
+</body>
+</html>
