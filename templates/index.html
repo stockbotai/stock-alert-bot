@@ -2,29 +2,31 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stock Genie — Bullish & Bearish Stocks</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock Genie — Live Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: "Poppins", sans-serif;
       background: linear-gradient(135deg, #0f172a, #1e293b);
-      color: #fff;
-      text-align: center;
+      color: #e5e7eb;
       margin: 0;
-      padding: 40px;
+      padding: 20px;
+      text-align: center;
     }
     h1 {
       color: #00eaff;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     .container {
       display: flex;
       justify-content: center;
-      gap: 40px;
       flex-wrap: wrap;
+      gap: 30px;
+      margin-top: 20px;
     }
     .card {
-      width: 320px;
+      width: 340px;
       background: rgba(255,255,255,0.05);
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 16px;
@@ -32,23 +34,22 @@
       padding: 20px;
       backdrop-filter: blur(8px);
     }
+    h2 { margin: 0 0 10px 0; }
     .bullish h2 { color: #22c55e; }
     .bearish h2 { color: #ef4444; }
     ul { list-style: none; padding: 0; margin: 0; }
     li {
-      margin: 10px 0;
-      font-size: 1rem;
       display: flex;
       justify-content: space-between;
+      padding: 5px 0;
       border-bottom: 1px solid rgba(255,255,255,0.1);
-      padding-bottom: 5px;
     }
-    small { opacity: 0.7; }
+    canvas { width: 95%; margin-top: 30px; }
   </style>
 </head>
 <body>
-  <h1>📊 Stock Genie — Live Bullish & Bearish Stocks</h1>
-  <p><small>Auto-refreshes every 60 seconds</small></p>
+  <h1>📊 Stock Genie — Bullish & Bearish Dashboard</h1>
+  <p><small>Live data | Refreshes every 60s</small></p>
 
   <div class="container">
     <div class="card bullish">
@@ -61,16 +62,54 @@
     </div>
   </div>
 
+  <canvas id="trendChart"></canvas>
+
   <script>
     async function loadData() {
-      const bullish = await fetch("/api/bullish").then(res => res.json());
-      const bearish = await fetch("/api/bearish").then(res => res.json());
+      const bullish = await fetch("/api/bullish").then(r => r.json());
+      const bearish = await fetch("/api/bearish").then(r => r.json());
 
-      const bullishList = document.getElementById("bullishList");
-      const bearishList = document.getElementById("bearishList");
+      document.getElementById("bullishList").innerHTML =
+        bullish.map(s => `<li><b>${s.name}</b> <span style="color:#22c55e">${s.change}</span></li>`).join('');
 
-      bullishList.innerHTML = bullish.map(s => `<li><b>${s.name}</b> <span style="color:#22c55e">${s.change}</span></li>`).join('');
-      bearishList.innerHTML = bearish.map(s => `<li><b>${s.name}</b> <span style="color:#ef4444">${s.change}</span></li>`).join('');
+      document.getElementById("bearishList").innerHTML =
+        bearish.map(s => `<li><b>${s.name}</b> <span style="color:#ef4444">${s.change}</span></li>`).join('');
+
+      // load chart from stored history
+      const history = await fetch("/api/history").then(r => r.json());
+      const timestamps = history.map(x => x.timestamp);
+      const avgChange = history.map(x => {
+        const avg = x.data.reduce((a, b) => a + b.pChange, 0) / x.data.length;
+        return avg.toFixed(2);
+      });
+
+      renderChart(timestamps, avgChange);
+    }
+
+    function renderChart(labels, data) {
+      const ctx = document.getElementById("trendChart").getContext("2d");
+      if (window.myChart) window.myChart.destroy();
+      window.myChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Avg Market % Change (5min updates)",
+            data,
+            borderColor: "#00eaff",
+            backgroundColor: "rgba(0,234,255,0.3)",
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          plugins: { legend: { labels: { color: "#e5e7eb" } } },
+          scales: {
+            x: { ticks: { color: "#9ca3af" } },
+            y: { ticks: { color: "#9ca3af" } }
+          }
+        }
+      });
     }
 
     loadData();
