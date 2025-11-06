@@ -1,193 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Genie — AI Stock Assistant</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#0b1020;--card:#0f1724;--muted:#9aa7b2;--accent:#7c3aed;--glass:rgba(255,255,255,0.03)}
-*{box-sizing:border-box;font-family:Inter,system-ui,Arial}
-body{margin:0;background:linear-gradient(180deg,#071027 0%,#071522 100%);color:#e6eef6;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-.wrap{width:100%;max-width:980px}
-header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
-.logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#06b6d4);display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:20px}
-h1{margin:0;font-size:20px}
-p.lead{margin:4px 0 0;color:var(--muted);font-size:13px}
-.panel{background:var(--card);border-radius:14px;padding:18px;box-shadow:0 6px 30px rgba(2,6,23,0.6)}
-.top-controls{display:flex;gap:12px;align-items:center;margin-bottom:12px}
-.search{flex:1;display:flex;gap:8px}
-input.search-input{flex:1;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:inherit;outline:none}
-button.primary{background:var(--accent);border:none;padding:10px 14px;border-radius:10px;color:#fff;font-weight:600;cursor:pointer}
-button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 10px;border-radius:10px;color:var(--muted);cursor:pointer}
-.suggestions{display:flex;gap:8px;margin:12px 0 18px;flex-wrap:wrap}
-.chip{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,0.03);color:var(--muted);font-size:13px;cursor:pointer;border:1px solid rgba(255,255,255,0.02)}
-.grid{display:grid;grid-template-columns:2fr 1fr;gap:14px}
-.chat{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:12px;border-radius:10px;min-height:320px;max-height:560px;overflow:auto}
-.side{padding:12px;border-radius:10px;background:rgba(255,255,255,0.02);min-height:320px}
-.msg{margin:10px 0;display:flex;gap:10px}
-.msg.user{justify-content:flex-end}
-.bubble{padding:10px 14px;border-radius:12px;max-width:70%;background:#081426;border:1px solid rgba(255,255,255,0.02);font-size:14px}
-.bubble.user{background:linear-gradient(90deg,var(--accent),#06b6d4);color:#021;font-weight:600}
-.mini-title{font-size:13px;color:var(--muted);margin-bottom:8px}
-.card{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;margin-bottom:10px}
-.card h4{margin:0 0 6px}
-.card p{margin:0;color:var(--muted);font-size:13px}
-footer.controls{display:flex;gap:8px;margin-top:12px}
-textarea#prompt{width:100%;min-height:60px;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;resize:vertical}
-.small{font-size:12px;color:var(--muted)}
-@media (max-width:880px){.grid{grid-template-columns:1fr}.side{order:2}}
-</style>
+  <meta charset="UTF-8" />
+  <title>Stock Screener | EWO Live</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta http-equiv="refresh" content="60">
 </head>
-<body>
-<div class="wrap">
-  <header>
-    <div class="logo">G</div>
-    <div><h1>Genie</h1><p class="lead">AI assistant for stocks — ask questions, run scans, get alerts.</p></div>
-  </header>
+<body class="bg-[#0f172a] text-gray-100 font-sans">
+  <div class="text-center py-6">
+    <h1 class="text-3xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+      🔥 Bullish–Bearish Screener
+    </h1>
+    <p class="text-sm text-gray-400 mt-1">Updated: {{ data['last_update'] }}</p>
+  </div>
 
-  <div class="panel">
-    <div class="top-controls">
-      <div class="search">
-        <input id="q" class="search-input" placeholder="Ask e.g. 'Which NSE stocks are trending now?' or 'RELIANCE.NS'"/>
-        <button id="askBtn" class="primary">Ask Genie</button>
-      </div>
-      <button id="openChat" class="ghost">Open Chat</button>
+  <div class="grid grid-cols-2 gap-6 px-8">
+    <!-- Bullish -->
+    <div>
+      <h2 class="text-2xl text-green-400 font-semibold mb-3">Bullish Stocks</h2>
+      {% for s in data['bullish'] %}
+        <div class="bg-green-900/20 border border-green-600 rounded-xl p-4 mb-2 shadow-md">
+          <p class="text-lg font-bold">{{ s.symbol }}</p>
+          <p class="text-sm text-gray-300">Sector: {{ s.sector }}</p>
+          <p class="text-sm">EWO(1D): {{ s.ewo_1d }} | EWO(5m): {{ s.ewo_5m }}</p>
+        </div>
+      {% endfor %}
     </div>
 
-    <div class="suggestions" id="suggestions">
-      <div class="chip">Top gainers today</div>
-      <div class="chip">Stocks to watch</div>
-      <div class="chip">RELIANCE.NS</div>
-      <div class="chip">SBIN.NS</div>
-    </div>
-
-    <div class="grid">
-      <div>
-        <div class="chat" id="chat">
-          <div class="msg"><div class="bubble">Hi — I'm Genie. Ask me about any stock, or press Run Scan to find alerts.</div></div>
+    <!-- Bearish -->
+    <div>
+      <h2 class="text-2xl text-red-400 font-semibold mb-3">Bearish Stocks</h2>
+      {% for s in data['bearish'] %}
+        <div class="bg-red-900/20 border border-red-600 rounded-xl p-4 mb-2 shadow-md">
+          <p class="text-lg font-bold">{{ s.symbol }}</p>
+          <p class="text-sm text-gray-300">Sector: {{ s.sector }}</p>
+          <p class="text-sm">EWO(1D): {{ s.ewo_1d }} | EWO(5m): {{ s.ewo_5m }}</p>
         </div>
-
-        <footer class="controls">
-          <textarea id="prompt" placeholder="Type your question..."></textarea>
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            <button id="send" class="primary">Send</button>
-            <button id="clear" class="ghost">Clear</button>
-          </div>
-        </footer>
-      </div>
-
-      <aside class="side">
-        <div class="mini-title">Quick Actions</div>
-        <div class="card">
-          <h4>Scan Market</h4>
-          <p>Run a quick scan for trending stocks and save alerts to DB.</p>
-          <div style="margin-top:8px;">
-            <button id="scanBtn" class="primary">Run Scan</button>
-          </div>
-        </div>
-
-        <div class="mini-title">Recent Alerts</div>
-        <div id="alertsList">
-          <div class="card"><p class="small">No alerts yet — run a scan.</p></div>
-        </div>
-
-        <div style="height:10px"></div>
-        <div class="mini-title">About Genie</div>
-        <div class="card"><p class="small">Full production Genie: OpenAI integration (+fallback), persistent DB, telegram alerts (optional).</p></div>
-      </aside>
+      {% endfor %}
     </div>
   </div>
-</div>
-
-<script>
-const chat = document.getElementById('chat');
-const q = document.getElementById('q');
-const prompt = document.getElementById('prompt');
-const send = document.getElementById('send');
-const askBtn = document.getElementById('askBtn');
-const scanBtn = document.getElementById('scanBtn');
-const clearBtn = document.getElementById('clear');
-const suggestions = document.getElementById('suggestions');
-const alertsList = document.getElementById('alertsList');
-
-function addMessage(text, who='genie'){
-  const wrap = document.createElement('div');
-  wrap.className = 'msg ' + (who==='user'?'user':'');
-  const b = document.createElement('div');
-  b.className = 'bubble ' + (who==='user'?'user':'');
-  b.innerText = text;
-  wrap.appendChild(b);
-  chat.appendChild(wrap);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-document.querySelectorAll('.chip').forEach(c=>{
-  c.addEventListener('click', ()=> {
-    q.value = c.innerText;
-    askGenie(c.innerText);
-  });
-});
-
-askBtn.onclick = ()=> askGenie(q.value || prompt.value);
-send.onclick = ()=> askGenie(prompt.value || q.value);
-clearBtn.onclick = ()=> { prompt.value=''; q.value=''; }
-
-async function askGenie(text){
-  if(!text || text.trim().length<1) return;
-  addMessage(text, 'user');
-  addMessage('Genie is thinking...', 'genie');
-
-  try{
-    const res = await fetch('/api/genie', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question: text})
-    });
-    const data = await res.json();
-    const last = chat.querySelectorAll('.msg .bubble');
-    if(last && last.length) last[last.length-1].innerText = data.answer || data.fallback || "No answer";
-    if(data.alerts_html) document.getElementById('alertsList').innerHTML = data.alerts_html;
-  }catch(e){
-    console.error(e);
-    const last = chat.querySelectorAll('.msg .bubble');
-    if(last && last.length) last[last.length-1].innerText = "Error: couldn't reach server.";
-  }
-}
-
-scanBtn.onclick = async ()=>{
-  scanBtn.innerText = 'Scanning...';
-  try{
-    const r = await fetch('/trigger-scan', {method:'POST'});
-    const j = await r.json();
-    scanBtn.innerText = 'Run Scan';
-    refreshAlerts();
-    addMessage('Market scan started — results saved to Alerts.', 'genie');
-  }catch(e){
-    scanBtn.innerText = 'Run Scan';
-    addMessage('Scan failed — check server.', 'genie');
-  }
-};
-
-async function refreshAlerts(){
-  try{
-    const r = await fetch('/api/alerts?limit=6');
-    const j = await r.json();
-    if(Array.isArray(j) && j.length){
-      alertsList.innerHTML = '';
-      j.forEach(a=>{
-        const card = document.createElement('div');
-        card.className='card';
-        card.innerHTML = `<strong>${a.symbol}</strong><div class="small">${a.alert_type} · ${a.change_pct}% · ${new Date(a.created_at).toLocaleString()}</div>`;
-        alertsList.appendChild(card);
-      });
-    } else {
-      alertsList.innerHTML = `<div class="card"><p class="small">No alerts yet.</p></div>`;
-    }
-  }catch(e){
-    alertsList.innerHTML = `<div class="card"><p class="small">Unable to load alerts.</p></div>`;
-  }
-}
-
-refreshAlerts();
-</script>
 </body>
 </html>
