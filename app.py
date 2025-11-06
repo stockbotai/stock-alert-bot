@@ -1,52 +1,66 @@
 from flask import Flask, jsonify, render_template
-import yfinance as yf
+import requests
 import pandas as pd
-from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
 
 app = Flask(__name__)
 
-data_cache = {"bullish": [], "bearish": [], "last_update": None}
+# NSE API endpoints (public JSON endpoints)
+NSE_SECTOR_URL = "https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050"
 
-def ewo(df):
-    df["sma5"] = df["Close"].rolling(5).mean()
-    df["sma35"] = df["Close"].rolling(35).mean()
-    df["ewo"] = (df["sma5"] - df["sma35"]) / df["Close"] * 100
-    return df["ewo"].iloc[-1]
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive"
+}
 
-def update_data():
-    global data_cache
-    sectors = {
-        "METAL": ["TATASTEEL.NS","HINDALCO.NS","JSWSTEEL.NS"],
-        "IT": ["INFY.NS","TCS.NS","HCLTECH.NS"],
-        "AUTO": ["TATAMOTORS.NS","HEROMOTOCO.NS","BAJAJ-AUTO.NS"]
-    }
-    bullish, bearish = [], []
-    for sector, stocks in sectors.items():
-        for s in stocks:
-            d1 = yf.download(s, period="2d", interval="1d")
-            d5 = yf.download(s, period="5d", interval="5m")
-            if len(d1)>35 and len(d5)>35:
-                e1 = ewo(d1)
-                e5 = ewo(d5)
-                if e1>0 and e5>0:
-                    bullish.append({"symbol": s, "sector": sector, "ewo_1d": round(e1,2), "ewo_5m": round(e5,2)})
-                elif e1<0 and e5<0:
-                    bearish.append({"symbol": s, "sector": sector, "ewo_1d": round(e1,2), "ewo_5m": round(e5,2)})
-    data_cache = {"bullish": bullish, "bearish": bearish, "last_update": datetime.now().strftime("%H:%M:%S")}
-    print("Updated:", data_cache["last_update"])
+def fetch_nse_data():
+    """Fetch latest NIFTY 50 stock data from NSE"""
+    try:
+        session = requests.Session()
+        session.get("https://www.nseindia.com", headers=headers)
+        response = session.get(NSE_SECTOR_URL, headers=headers)
+        data = response.json()
+        df = pd.DataFrame(data['data'])
+        df['pChange'] = df['pChange'].astype(float)
+        df['lastPrice'] = df['lastPrice'].astype(float)
+        return df[['symbol', 'lastPrice', 'pChange']]
+    except Exception as e:
+        print("Error fetching NSE data:", e)
+        return pd.DataFrame(columns=['symbol', 'lastPrice', 'pChange'])
+
 
 @app.route("/")
-def home():
-    return render_template("index.html", data=data_cache)
+def index():
+    return render_template("index.html")
 
-@app.route("/api")
-def api():
-    return jsonify(data_cache)
+
+@app.route("/api/bullish")
+def get_bullish():
+    df = fetch_nse_data()
+    if df.empty:
+        return jsonify([])
+    bullish = df[df['pChange'] > 0].sort_values(by='pChange', ascending=False).head(10)
+    result = [
+        {"name": row['symbol'], "price": f"{row['lastPrice']} ₹", "change": f"+{row['pChange']}%"}
+        for _, row in bullish.iterrows()
+    ]
+    return jsonify(result)
+
+
+@app.route("/api/bearish")
+def get_bearish():
+    df = fetch_nse_data()
+    if df.empty:
+        return jsonify([])
+    bearish = df[df['pChange'] < 0].sort_values(by='pChange', ascending=True).head(10)
+    result = [
+        {"name": row['symbol'], "price": f"{row['lastPrice']} ₹", "change": f"{row['pChange']}%"}
+        for _, row in bearish.iterrows()
+    ]
+    return jsonify(result)
+
 
 if __name__ == "__main__":
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(update_data, "interval", minutes=1)
-    scheduler.start()
-    update_data()
-    app.run(host="0.0.0.0", port=10000)
+    app.run(host="0.0.0.0", port=8080)
