@@ -1,6 +1,12 @@
 flask
-apscheduler
+flask-cors
+openai
 yfinance
 pandas
-scikit-learn
 numpy
+scikit-learn
+SQLAlchemy
+psycopg2-binary
+apscheduler
+requests
+gunicorn
